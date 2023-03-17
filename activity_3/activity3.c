@@ -8,7 +8,7 @@
 #include <pthread.h>
 #include <stdint.h>
 
-#define MAX_NUM 100
+#define MAX_NUM 10
 
 #define SHARED_MEM_NAME "/shm_act1"
 #define SHARED_MEM_SIZE 4
@@ -23,25 +23,35 @@ typedef struct {
     pthread_mutex_t * mutex2;
 } thread_data_t;
 
-int current_thread=1;
-pthread_mutex_t mutex1;
-pthread_mutex_t mutex2;
+pthread_mutex_t mutex1,mutex2;
 
-void* handle_thread(void* arg){
-    // get thread count (thread1, thread2, ...)
 
+
+void* handle_thread1(void* arg){
     thread_data_t data=*((thread_data_t*) arg);
     
-    printf("thread %lu", pthread_self());
+    printf("thread1 begins, %d\n",*data.data_ptr);
 
-    while((int)(data->data_ptr)<0){
-        pthread_mutex_lock(data->mutex2); // mutex1 for parent or thread1
-
-
-
-        pthread_mutex_unlock(data->mutex1); // mutex2 for parent or thread1
+    while((int)(*data.data_ptr)>1){
+        pthread_mutex_lock(data.mutex1);
+        printf("thread1 bounce: %d\n", --(*data.data_ptr));
+        pthread_mutex_unlock(data.mutex2);
     }
 }
+
+void* handle_thread2(void* arg){
+    thread_data_t data=*((thread_data_t*) arg);
+
+    printf("thread2 begins, %d\n",*data.data_ptr);
+    pthread_mutex_unlock(data.mutex1);
+
+    while((int)(*data.data_ptr)>1){
+        pthread_mutex_lock(data.mutex2);
+        printf("thread2 bounce: %d\n", --(*data.data_ptr));
+        pthread_mutex_unlock(data.mutex1);
+    }
+}
+
 
 
 int main(int argc, char *argv[]){
@@ -81,27 +91,36 @@ int main(int argc, char *argv[]){
     // "generate a random number which should be written to shared memory"
     *shared_value=random_number;
 
+
     // [ MUTEXES ]
     pthread_mutex_init(&mutex1, NULL);
     pthread_mutex_init(&mutex2, NULL);
-    
-    // [ THREADS ]
 
-	pthread_t tid[NUM_THREADS];
+
+    // [ THREADS ]
 
     thread_data_t data;
     data.data_ptr=shared_value;
     data.mutex1=&mutex1;
     data.mutex2=&mutex2;
 
+    pthread_mutex_lock(data.mutex1);
+    pthread_mutex_lock(data.mutex2);
 
-    for(int i=0; i<NUM_THREADS; i++)
-        pthread_create(&tid[i], NULL, handle_thread, (void *)&data);
-    
 
-    for(int i=0; i<NUM_THREADS; i++)
+	pthread_t tid[NUM_THREADS];
+    pthread_create(&tid[0], NULL, handle_thread1, (void *)&data);
+    pthread_create(&tid[1], NULL, handle_thread2, (void *)&data);
+
+    for (int i=0; i<NUM_THREADS; i++){
         pthread_join(tid[i], NULL);
-    
+        printf("thread%d ends.\n",i+1);
+    }
+
+
+
+
+    // [ EXIT ]
 
     // destroy mutexes
     pthread_mutex_destroy(&mutex1);
@@ -121,5 +140,5 @@ int main(int argc, char *argv[]){
         exit(0);
     }
 
-    
+    return 0;
 }
