@@ -7,6 +7,8 @@
 #include <sys/mman.h> // mmap + constants
 #include <semaphore.h> // semaphores
 
+#define MAX_NUM 100
+
 #define SHARED_MEM_NAME "/shm_act1"
 #define SHARED_MEM_SIZE 4
 
@@ -18,12 +20,8 @@ int main(int argc, char *argv[]){
     srandom(time(0));
 
     // variable initialisation
-    int ppid,
-        pid,
-        resulting_pid,
-        lower=3,
-        upper=10,
-        random_number=(random()%(upper-lower+1))+lower;
+    int resulting_pid,
+        random_number=random()%(MAX_NUM+1);
 
     printf("bouncing for %d times.\n",random_number);
 
