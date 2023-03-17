@@ -50,6 +50,7 @@ int main(int argc, char *argv[]){
     int random_number=random()%(MAX_NUM+1);
     printf("bouncing for %d times.\n",random_number);
 
+
     // [ SHARED MEMORY ]
     // https://gist.github.com/garcia556/8231e844a90457c99cc72e5add8388e4
 
