@@ -7,6 +7,7 @@
 #include <fcntl.h>
 #include <sys/stat.h>
 #include <sys/types.h>
+#include <sys/wait.h>
 
 
 #define OP_MAX 100
@@ -46,12 +47,13 @@ void parent(){
             exit(0);
         }
 
-        wait(NULL);
     }
     printf("parent (pid=%d) ends.\n", getpid());
 
-
     close(fd_pipe);
+
+    wait(NULL);
+
     unlink(FILENAME);
 }
 
@@ -99,6 +101,8 @@ void child(){
         printf(" \n");
     }
 
+    close(fd_pipe);
+
     printf("child (pid=%d) ends.\n", getpid());
 }
 
@@ -112,6 +116,7 @@ int main(int argc, char *argv[]){
     }
 
     iterations=atoi(argv[1]);
+
     
     if(mkfifo(FILENAME, 0666)<0){
         perror("mkfifo");
@@ -119,20 +124,19 @@ int main(int argc, char *argv[]){
     }
     printf("main: created pipe.\n");
 
+
+    printf("main: open pipe for read/write.\n");
     fd_pipe=open(FILENAME, O_RDWR);
     if(fd_pipe<0){
         perror("open");
         exit(0);
     }
 
-    printf("main: open pipe for read/write.\n");
 
     int pid=fork();
     if(pid<0){
         perror("fork");
         exit(0);
-    }
-
-    if(pid==0) child();
+    }else if(pid==0) child();
     else parent();
 }
